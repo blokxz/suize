@@ -214,6 +214,12 @@ def build_parser() -> argparse.ArgumentParser:
         "-n", "--lines", type=_positive_int, metavar="N", help="máximo de entradas a mostrar"
     )
     logs.add_argument(
+        "-f",
+        "--follow",
+        action="store_true",
+        help="deja la consulta abierta y muestra las entradas nuevas según llegan",
+    )
+    logs.add_argument(
         "--format",
         choices=OUTPUT_FORMATS,
         default="table",
@@ -393,6 +399,24 @@ def _cmd_scan(
     return EXIT_OK
 
 
+def _follow_conflict(args: argparse.Namespace) -> str | None:
+    """Combinaciones incompatibles con ``--follow``; ``None`` si todo encaja."""
+    if _resolve_format(args) != "table":
+        return (
+            "--follow no se combina con --json ni --format csv: el seguimiento no "
+            "termina, así que no hay un documento que cerrar. Redirige la salida de "
+            "'suize logs --follow' si quieres guardarla."
+        )
+    if args.output is not None:
+        return (
+            "--follow no se combina con --output: redirige la salida con '>' si la "
+            "quieres en un archivo."
+        )
+    if args.until is not None:
+        return "--follow no se combina con --until: seguir el journal no tiene fecha final."
+    return None
+
+
 def _cmd_logs(
     args: argparse.Namespace,
     settings: Settings,
@@ -409,6 +433,12 @@ def _cmd_logs(
         err.print(message("error", str(exc)))
         return EXIT_USAGE
 
+    if args.follow:
+        conflicto = _follow_conflict(args)
+        if conflicto is not None:
+            err.print(message("error", conflicto))
+            return EXIT_USAGE
+
     if not _check_required(err, deps, ["journalctl"]):
         return EXIT_MISSING_DEPENDENCY
     if not args.quiet:
@@ -424,6 +454,9 @@ def _cmd_logs(
         grep=args.grep or None,
         lines=args.lines or settings.log_lines,
     )
+    if args.follow:
+        return menus.follow_logs(out, err, query, quiet=args.quiet)
+
     try:
         entries = menus.execute_logs(err, query, timeout=settings.journal_timeout)
     except menus.USER_ERRORS as exc:

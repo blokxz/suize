@@ -7,11 +7,17 @@ Todas las llamadas a programas externos (nmap, journalctl, systemctl) pasan por
 * nunca usa ``shell=True`` (los argumentos viajan como lista),
 * aplica un *timeout*,
 * y traduce cualquier fallo a :class:`CommandError` con un mensaje claro.
+
+:func:`run` espera a que el programa termine. Para un proceso que no termina
+por sí solo —``journalctl --follow``— está :func:`stream`, que va entregando
+las líneas según llegan y se asegura de matar al hijo al salir.
 """
 
 import shutil
+import signal
 import subprocess
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 DEFAULT_TIMEOUT = 60.0
@@ -107,6 +113,91 @@ def run(
             stderr=result.stderr,
         )
     return result
+
+
+#: Margen para que el proceso hijo termine por las buenas antes de matarlo.
+_KILL_GRACE = 3.0
+
+
+def _resolve(cmd: Sequence[str]) -> tuple[str, str]:
+    """Comprueba el comando y devuelve ``(programa, ruta ejecutable)``."""
+    if not cmd:
+        raise CommandError("No se indicó ningún comando para ejecutar.")
+    program = cmd[0]
+    executable = shutil.which(program)
+    if executable is None:
+        raise CommandError(
+            f"No se encontró '{program}' en el PATH. Instálalo o revisa tu variable PATH.",
+            cmd=cmd,
+        )
+    return program, executable
+
+
+@contextmanager
+def _terminating(process: "subprocess.Popen[str]") -> Iterator[None]:
+    """Garantiza que el hijo muere al salir del bloque, pase lo que pase.
+
+    Sin esto, un Ctrl+C dejaría un journalctl huérfano escribiendo en una
+    tubería que ya nadie lee.
+    """
+    try:
+        yield
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=_KILL_GRACE)
+            except subprocess.TimeoutExpired:
+                # No atendió al SIGTERM: no queda otra que SIGKILL.
+                process.kill()
+                process.wait()
+        if process.stdout is not None:
+            process.stdout.close()
+
+
+def stream(cmd: Sequence[str]) -> Iterator[str]:
+    """Ejecuta ``cmd`` y va entregando sus líneas de salida según llegan.
+
+    Pensado para procesos que no terminan solos (``journalctl --follow``): no
+    hay *timeout*, porque el final lo decide quien consume el generador, con un
+    ``break`` o un Ctrl+C. Al salir del bucle, por la razón que sea, el proceso
+    hijo se termina.
+
+    El hijo se lanza en su propio grupo de procesos para que el Ctrl+C de la
+    terminal llegue solo a Suize: así se decide aquí cómo y cuándo pararlo, en
+    vez de que el hijo muera por su cuenta a mitad de una línea.
+
+    Raises:
+        CommandError: si el programa no existe o no puede lanzarse.
+    """
+    program, executable = _resolve(cmd)
+    try:
+        process = subprocess.Popen(
+            [executable, *cmd[1:]],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,  # por líneas: sin esto la salida llegaría a bloques
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raise CommandError(
+            f"No se pudo ejecutar '{program}': {exc.strerror or exc}", cmd=cmd
+        ) from exc
+
+    with _terminating(process):
+        assert process.stdout is not None
+        for line in process.stdout:
+            text = line.rstrip("\n")
+            if text:
+                yield text
+
+
+def interrupt_signal() -> int:
+    """La señal con la que se pide a un hijo que pare (útil en los tests)."""
+    return signal.SIGTERM
 
 
 def _tail(text: str, limit: int = _DETAIL_LIMIT) -> str:

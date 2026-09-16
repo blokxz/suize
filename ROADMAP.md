@@ -35,8 +35,9 @@ Lo que más cambia el uso diario o lo que más cuesta diagnosticar si falla.
 - [ ] **Escaneo UDP (`-sU`).** Deja fuera servicios relevantes como DNS, DHCP, SNMP y NTP.
   Requiere privilegios de root y es notablemente más lento, así que encaja mejor como perfil
   separado que como opción del escaneo normal.
-- [ ] **Modo seguimiento (`journalctl -f`).** Ver los logs en vivo mientras se reproduce un
-  problema, en lugar de consultarlos después.
+- [x] **Modo seguimiento (`journalctl -f`).** Resuelto: `-f`/`--follow` en `logs`. Requirió
+  añadir `shell.stream`, que entrega las líneas según llegan y mata al hijo al cortar el bucle;
+  `shell.run` no servía porque espera a que el proceso termine.
 - [x] **Desactivar los iconos de la interfaz.** Resuelto con la opción global `--no-emoji`.
 - [x] **Ganchos de `pre-commit`.** Resuelto: `.pre-commit-config.yaml` con ruff, mypy y las
   comprobaciones básicas, fijados a las mismas versiones que la CI.

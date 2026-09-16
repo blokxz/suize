@@ -18,7 +18,7 @@ from suize.models.host import Host
 from suize.models.log_entry import LogEntry
 from suize.ui import prompts
 from suize.ui.pager import paged
-from suize.ui.render_logs import render_logs
+from suize.ui.render_logs import build_live_line, render_logs
 from suize.ui.render_nmap import render_correlations, render_hosts
 from suize.ui.theme import APP_NAME, ICONS, TAGLINE, icon, icons_enabled, message
 from suize.utils.deps import Dependency, is_systemd_running, systemd_hint
@@ -152,6 +152,40 @@ def execute_logs(status_console: Console, query: JournalQuery, *, timeout: float
     with status_console.status("Consultando journalctl…"):
         raw = journal_reader.read_journal(query, timeout=timeout)
     return journal_parser.parse_journal_json(raw)
+
+
+#: Lo que se imprime al empezar a seguir el journal.
+FOLLOW_BANNER = "Siguiendo el journal. Ctrl+C para parar."
+
+
+def follow_logs(
+    console: Console,
+    err: Console,
+    query: JournalQuery,
+    *,
+    quiet: bool = False,
+) -> int:
+    """Sigue el journal en vivo hasta que el usuario corta con Ctrl+C.
+
+    Devuelve el código de salida que usará ``cli``: 0 si se paró con Ctrl+C (es la
+    forma normal de terminar, no un error) y 1 si journalctl falló.
+    """
+    if not quiet:
+        err.print(message("info", FOLLOW_BANNER))
+    seen = 0
+    try:
+        for entry in journal_reader.follow_journal(query):
+            console.print(build_live_line(entry))
+            seen += 1
+    except KeyboardInterrupt:
+        # Salida esperada: el seguimiento no termina de ninguna otra forma.
+        pass
+    except USER_ERRORS as exc:
+        err.print(message("error", str(exc)))
+        return 1
+    if not quiet:
+        err.print(message("info", f"Seguimiento detenido ({seen} entradas)."))
+    return 0
 
 
 def show_logs(

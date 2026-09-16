@@ -48,6 +48,23 @@ def parse_journal_json(text: str, *, strict: bool = False) -> list[LogEntry]:
     return _entries_from_records(records_from_lines, strict)
 
 
+def parse_line(line: str) -> LogEntry | None:
+    """Parsea una sola línea de ``journalctl -o json``.
+
+    Devuelve ``None`` si la línea está vacía, no es JSON válido o no tiene una
+    fecha utilizable. Es la entrada que usa el seguimiento en vivo, donde cada
+    línea llega suelta y no se puede esperar al final de la salida.
+    """
+    text = line.strip()
+    if not text:
+        return None
+    try:
+        record = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    return parse_record(record) if isinstance(record, Mapping) else None
+
+
 def parse_journal_file(path: Path | str, *, strict: bool = False) -> list[LogEntry]:
     """Igual que :func:`parse_journal_json` pero leyendo desde un archivo."""
     try:

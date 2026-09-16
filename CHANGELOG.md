@@ -10,6 +10,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Seguimiento del journal en vivo con `-f`/`--follow`: las entradas aparecen según se escriben,
+  con los mismos filtros que una consulta normal. Se para con `Ctrl+C`, que sale con código 0.
 - Opción global `--no-emoji`, para terminales sin una fuente que incluya los iconos. Los del
   menú desaparecen y los de los mensajes se sustituyen por marcas de texto (`[i]`, `[ok]`,
   `[!]`, `[x]`), que siguen distinguiendo un error de un aviso.

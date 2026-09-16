@@ -24,7 +24,7 @@ _suize() {
     local global_opts="--config --no-color --no-pager --no-emoji -h --help"
     local output_opts="--format -o --output --json -q --quiet"
     local scan_opts="--profile -Pn --no-ping --correlate --since --save-xml"
-    local logs_opts="-u --unit -p --priority --since --until -g --grep -n --lines"
+    local logs_opts="-u --unit -p --priority --since --until -g --grep -n --lines -f --follow"
 
     local profiles="fast standard full"
     local formats="table json csv"

@@ -893,3 +893,120 @@ def test_the_symbols_are_used_when_the_flag_is_absent(
     _, _, err = run_cli(capsys, "scan", "127.0.0.1")
 
     assert any(symbol in err for symbol in ("⚠", "✖"))
+
+
+# ------------------------------------------------------------------ seguimiento en vivo
+
+
+def test_follow_streams_each_entry(
+    fake_system: FakeSystem, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from suize.core import journal_reader
+    from suize.core.journal_parser import parse_journal_json
+
+    entradas = parse_journal_json(fake_system.journal_output)[:2]
+    monkeypatch.setattr(journal_reader, "follow_journal", lambda query: iter(entradas))
+
+    code, out, _ = run_cli(capsys, "logs", "--follow", "-q")
+
+    assert code == cli.EXIT_OK
+    assert out.count("\n") >= len(entradas)
+
+
+def test_ctrl_c_stops_the_follow_without_an_error(
+    fake_system: FakeSystem, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Cortar con Ctrl+C es la forma normal de terminar, no un fallo."""
+    from suize.core import journal_reader
+
+    def interrumpido(query: object) -> Any:
+        raise KeyboardInterrupt
+        yield  # pragma: no cover - lo convierte en generador
+
+    monkeypatch.setattr(journal_reader, "follow_journal", interrumpido)
+
+    code, _, _ = run_cli(capsys, "logs", "--follow", "-q")
+
+    assert code == cli.EXIT_OK
+
+
+def test_a_journalctl_failure_while_following_is_reported(
+    fake_system: FakeSystem, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from suize.core import journal_reader
+    from suize.utils.shell import CommandError
+
+    def falla(query: object) -> Any:
+        raise CommandError("journalctl se cayó")
+        yield  # pragma: no cover
+
+    monkeypatch.setattr(journal_reader, "follow_journal", falla)
+
+    code, _, err = run_cli(capsys, "logs", "--follow", "-q")
+
+    assert code == cli.EXIT_ERROR
+    assert "journalctl se cayó" in err
+
+
+def test_the_banner_explains_how_to_stop(
+    fake_system: FakeSystem, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from suize.core import journal_reader
+
+    monkeypatch.setattr(journal_reader, "follow_journal", lambda query: iter([]))
+
+    _, _, err = run_cli(capsys, "logs", "--follow")
+
+    assert "Ctrl+C" in err
+
+
+def test_quiet_hides_the_banner(
+    fake_system: FakeSystem, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from suize.core import journal_reader
+
+    monkeypatch.setattr(journal_reader, "follow_journal", lambda query: iter([]))
+
+    _, _, err = run_cli(capsys, "logs", "--follow", "-q")
+
+    assert "Ctrl+C" not in err
+
+
+@pytest.mark.parametrize(
+    ("argv", "motivo"),
+    [
+        (["logs", "--follow", "--json"], "documento"),
+        (["logs", "--follow", "--format", "csv"], "documento"),
+        (["logs", "--follow", "--output", "/tmp/x.txt"], "--output"),
+        (["logs", "--follow", "--until", "2026-01-15"], "--until"),
+    ],
+)
+def test_incompatible_combinations_are_rejected(
+    fake_system: FakeSystem, capsys: pytest.CaptureFixture[str], argv: list[str], motivo: str
+) -> None:
+    """Se explica por qué no encajan, en vez de fallar a medias."""
+    code, _, err = run_cli(capsys, *argv)
+
+    assert code == cli.EXIT_USAGE
+    assert motivo in err
+
+
+def test_since_is_allowed_while_following(
+    fake_system: FakeSystem, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--since sí encaja: arranca mostrando lo reciente y sigue desde ahí."""
+    from suize.core import journal_reader
+
+    monkeypatch.setattr(journal_reader, "follow_journal", lambda query: iter([]))
+
+    code, _, _ = run_cli(capsys, "logs", "--follow", "--since", "1h", "-q")
+
+    assert code == cli.EXIT_OK
+
+
+def test_follow_is_off_by_default() -> None:
+    assert cli.build_parser().parse_args(["logs"]).follow is False
+
+
+def test_the_short_form_works() -> None:
+    assert cli.build_parser().parse_args(["logs", "-f"]).follow is True

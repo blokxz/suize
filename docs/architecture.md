@@ -58,7 +58,7 @@ suize/
 │   │   ├── host.py           # Host, Port
 │   │   └── log_entry.py      # LogEntry, LogSummary, PRIORITY_NAMES
 │   ├── utils/
-│   │   ├── shell.py          # ÚNICO punto que llama a subprocess
+│   │   ├── shell.py          # ÚNICO punto que llama a subprocess (run y stream)
 │   │   ├── deps.py           # ¿están nmap/journalctl/systemctl? ¿corre systemd?
 │   │   ├── permissions.py    # root, grupos del journal, avisos
 │   │   ├── validators.py     # objetivos, fechas, prioridades, unidades
@@ -177,6 +177,16 @@ en el parser principal y se repiten dentro de cada subcomando con `default=SUPPR
 `SUPPRESS`, argparse aplicaría el valor por defecto del subparser al terminar de analizar y
 borraría lo que el usuario escribió antes del subcomando, que es el error clásico de este
 patrón; con él, la opción solo aparece en el resultado si se indicó de verdad.
+
+**Un proceso que no termina.** `shell.run` está construido sobre `subprocess.run`: espera a que
+el programa acabe y le aplica un tiempo máximo. `journalctl --follow` no acaba nunca, así que
+el seguimiento necesitó una segunda puerta, `shell.stream`, que entrega las líneas según llegan
+y no impone timeout —el final lo decide quien consume el generador, con un `break` o un Ctrl+C—.
+Lo delicado no es leer, sino limpiar: al salir del bucle por cualquier vía, un bloque `finally`
+termina el proceso hijo y, si no atiende al SIGTERM, lo mata. Sin eso, cortar un `suize logs -f
+| head` dejaría un journalctl huérfano escribiendo a una tubería que ya nadie lee. El hijo se
+lanza además en su propia sesión, para que el Ctrl+C de la terminal llegue a Suize y sea este
+quien decida cómo parar, en vez de que el hijo muera a mitad de una línea.
 
 **Paginación decidida a posteriori.** `ui/pager.py` no puede saber cuánto ocupará una salida
 antes de generarla, así que captura el bloque en memoria, cuenta sus líneas y solo entonces

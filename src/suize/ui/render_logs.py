@@ -58,6 +58,24 @@ def build_summary_panel(summary: LogSummary, *, time_range: TimeRange | None = N
     return Panel(Group(header, Text(""), grid), title="Resumen", border_style="cyan", expand=False)
 
 
+def build_live_line(entry: LogEntry) -> Text:
+    """Una entrada como línea suelta, para el seguimiento en vivo.
+
+    En vivo no cabe una tabla: no se sabe de antemano cuántas entradas habrá ni
+    cuánto ocupará cada columna, y redibujarla en cada línea haría parpadear la
+    pantalla. Se imprime una línea por entrada, como hace journalctl.
+    """
+    style = priority_style(entry.priority)
+    message_style = style if entry.priority <= 4 or entry.priority == 7 else ""
+    return Text.assemble(
+        (entry.timestamp.strftime(TIMESTAMP_FORMAT), "muted"),
+        "  ",
+        (f"{priority_label(entry.priority):<8}", style),
+        (f"{entry.unit or '-'}  ", "muted"),
+        (entry.message, message_style),
+    )
+
+
 def build_logs_table(entries: Sequence[LogEntry], *, title: str = "", caption: str = "") -> Table:
     """Tabla de entradas coloreadas según su prioridad."""
     table = Table(
