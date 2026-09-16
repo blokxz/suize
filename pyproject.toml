@@ -66,6 +66,11 @@ addopts = "-ra"
 [tool.coverage.run]
 source = ["suize"]
 branch = true
+# __main__.py es un adaptador de tres líneas para `python -m suize`. Lo prueban
+# dos tests de integración, pero lo hacen lanzando un subproceso, y la cobertura
+# no ve lo que ocurre en otro proceso: aparecería siempre al 0 % y ensuciaría el
+# informe sin señalar nada real.
+omit = ["*/suize/__main__.py"]
 
 [tool.coverage.report]
 # El umbral se fija por debajo de la cobertura real (95 %) para que un cambio

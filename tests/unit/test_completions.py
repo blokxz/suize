@@ -58,11 +58,6 @@ def choices_of(subcommand: str, flag: str) -> list[str]:
 # ------------------------------------------------------------------------------ archivos
 
 
-def test_both_completion_scripts_exist() -> None:
-    assert ZSH.is_file()
-    assert BASH.is_file()
-
-
 def test_the_zsh_script_declares_the_command_it_completes() -> None:
     assert ZSH.read_text(encoding="utf-8").startswith("#compdef suize")
 

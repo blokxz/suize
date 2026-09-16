@@ -74,17 +74,20 @@ def test_output_arrives_before_the_process_ends() -> None:
 def test_the_child_is_killed_when_the_loop_is_cut(tmp_path: Path) -> None:
     """Sin esto quedaría un journalctl huérfano escribiendo a una tubería muerta."""
     testigo = tmp_path / "siguio-vivo.txt"
+    # Las esperas son cortas a propósito: lo que se comprueba es que el hijo
+    # muere al instante, no cuánto aguantaría. Un segundo basta y mantiene la
+    # suite rápida; la espera de 1,5 s da margen de sobra sobre la del hijo.
     script = (
         "import time, pathlib\n"
         "print('arranco', flush=True)\n"
-        "time.sleep(3)\n"
+        "time.sleep(1)\n"
         f"pathlib.Path({str(testigo)!r}).write_text('el hijo sobrevivió')\n"
     )
 
     for _ in stream(_python(script)):
         break
 
-    time.sleep(4)  # más que el sleep del hijo
+    time.sleep(1.5)
     assert not testigo.exists(), "el proceso hijo siguió vivo tras cortar el bucle"
 
 

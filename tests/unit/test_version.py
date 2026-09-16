@@ -8,8 +8,6 @@ changelog dice otra cosa es un error silencioso y difícil de detectar después.
 import re
 from pathlib import Path
 
-import pytest
-
 from suize import __version__
 
 #: Raíz del repositorio (tests/unit/ -> tests/ -> raíz).
@@ -32,10 +30,6 @@ def released_versions() -> list[str]:
         for line in CHANGELOG.read_text(encoding="utf-8").splitlines()
         if (match := VERSION_HEADING_RE.match(line))
     ]
-
-
-def test_the_changelog_exists() -> None:
-    assert CHANGELOG.is_file()
 
 
 def test_the_version_follows_semver() -> None:
@@ -68,11 +62,9 @@ def test_the_changelog_has_a_section_for_unreleased_changes() -> None:
     assert "## [Sin publicar]" in CHANGELOG.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("section", ["Añadido", "Cambiado", "Corregido", "Eliminado"])
-def test_known_section_names_are_the_ones_used(section: str) -> None:
-    """Las secciones del changelog deben salir del vocabulario de Keep a Changelog."""
+def test_the_changelog_only_uses_known_section_names() -> None:
+    """Las secciones deben salir del vocabulario de Keep a Changelog, no inventarse."""
     used = set(re.findall(r"^### (.+)$", CHANGELOG.read_text(encoding="utf-8"), re.M))
     known = {"Añadido", "Cambiado", "Obsoleto", "Eliminado", "Corregido", "Seguridad"}
 
     assert used <= known, f"secciones desconocidas: {used - known}"
-    assert section in known
