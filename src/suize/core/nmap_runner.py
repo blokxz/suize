@@ -25,12 +25,22 @@ class ScanProfile:
     name: str
     args: tuple[str, ...]
     description: str
+    #: Nmap rechaza algunas técnicas sin privilegios. Es un dato del perfil, no
+    #: una comprobación: quién mira si hay root es la capa que lo va a ejecutar,
+    #: para que construir el comando siga sin depender del estado del proceso.
+    requires_root: bool = False
 
 
 SCAN_PROFILES: dict[str, ScanProfile] = {
     "fast": ScanProfile("fast", ("-F",), "Rápido: los 100 puertos más comunes"),
     "standard": ScanProfile("standard", (), "Estándar: los 1000 puertos más comunes"),
     "full": ScanProfile("full", ("-p-",), "Completo: los 65535 puertos TCP (lento)"),
+    "udp": ScanProfile(
+        "udp",
+        ("-sU", "-F"),
+        "UDP: los 100 puertos UDP más comunes (requiere root, muy lento)",
+        requires_root=True,
+    ),
 }
 DEFAULT_PROFILE = "standard"
 

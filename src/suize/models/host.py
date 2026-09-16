@@ -17,7 +17,15 @@ class Port:
 
     @property
     def is_open(self) -> bool:
-        return self.state == "open"
+        """``True`` para ``open`` y también para ``open|filtered``.
+
+        En UDP, Nmap casi nunca puede distinguir un puerto abierto de uno
+        filtrado: si el servicio no contesta a la sonda, responde
+        ``open|filtered``. Tratarlo como cerrado dejaría vacía la tabla de casi
+        cualquier escaneo UDP y diría "sin puertos abiertos" sobre un equipo que
+        sí los tiene.
+        """
+        return self.state.startswith("open")
 
     @property
     def version_label(self) -> str:
