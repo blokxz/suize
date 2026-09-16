@@ -1,7 +1,15 @@
-"""Consulta a journalctl con filtros combinables. Devuelve la salida JSON en bruto."""
+"""Consulta a journalctl con filtros combinables.
 
+:func:`read_journal` hace una consulta puntual y devuelve toda la salida.
+:func:`follow_journal` deja journalctl abierto y va entregando cada entrada
+según se escribe en el journal.
+"""
+
+from collections.abc import Iterator
 from dataclasses import dataclass
 
+from suize.core.journal_parser import parse_line
+from suize.models.log_entry import LogEntry
 from suize.utils import shell
 from suize.utils.time_filter import TimeRange
 from suize.utils.validators import parse_priority, validate_unit
@@ -46,6 +54,36 @@ def build_command(query: JournalQuery) -> list[str]:
             raise ValueError("El número de líneas debe ser mayor que 0.")
         cmd.append(f"--lines={query.lines}")
     return cmd
+
+
+def build_follow_command(query: JournalQuery) -> list[str]:
+    """Como :func:`build_command`, más ``--follow``.
+
+    Un rango temporal con final (``--until``) no tiene sentido siguiendo el
+    journal en vivo: journalctl se pararía al alcanzarlo. Se conserva el
+    ``--since``, que sí sirve para arrancar mostrando lo reciente.
+    """
+    cmd = build_command(query)
+    return [*cmd, "--follow"]
+
+
+def follow_journal(query: JournalQuery) -> Iterator[LogEntry]:
+    """Entrega cada entrada del journal según aparece, sin fin.
+
+    El bucle solo termina cuando quien consume el generador lo corta (un
+    ``break`` o un Ctrl+C), o si journalctl muere por su cuenta. Las líneas que
+    no se pueden interpretar se descartan en silencio: en vivo no hay a quién
+    informar del error sin ensuciar la pantalla, y una línea suelta corrupta no
+    justifica cortar el seguimiento.
+
+    Raises:
+        ValueError: filtros inválidos.
+        CommandError: journalctl no existe o no puede lanzarse.
+    """
+    for line in shell.stream(build_follow_command(query)):
+        entry = parse_line(line)
+        if entry is not None:
+            yield entry
 
 
 def read_journal(query: JournalQuery, *, timeout: float = DEFAULT_JOURNAL_TIMEOUT) -> str:

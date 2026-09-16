@@ -324,6 +324,7 @@ suize logs [-u UNIDAD] [-p PRIORIDAD] [--since RANGO] [--until FECHA]
 | `--until FECHA`         | Fin del intervalo, como fecha exacta.                                    |
 | `-g`, `--grep REGEX`    | Solo mensajes que coincidan con la expresión regular.                    |
 | `-n`, `--lines N`       | Número máximo de entradas. Por defecto, `logs.lines` (200).              |
+| `-f`, `--follow`        | Deja la consulta abierta y muestra las entradas nuevas según llegan.     |
 | `--format`              | `table` (por defecto), `json` o `csv`.                                   |
 | `-o`, `--output ARCHIVO`| Escribe el resultado en un archivo en lugar de la salida estándar.       |
 | `--json`                | Atajo de `--format json`.                                                |
@@ -339,6 +340,25 @@ suize logs -p 0..3 --since 7d
 suize logs -g "Failed password|Invalid user" -u ssh --since 24h
 suize logs --since "2026-01-15 08:00" --until "2026-01-15 09:30"
 ```
+
+### Seguir el journal en vivo
+
+Con `-f` la consulta no termina: cada entrada nueva aparece en cuanto se escribe en el journal,
+igual que `journalctl -f`. Es lo que quieres mientras reproduces un problema.
+
+```bash
+suize logs -f                     # todo lo que vaya llegando
+suize logs -f -u nginx -p err     # solo los errores de nginx
+suize logs -f --since 15m         # arranca con lo reciente y sigue desde ahí
+```
+
+Se para con `Ctrl+C`, que es la forma normal de terminar: Suize sale con código 0 y dice
+cuántas entradas mostró. Los filtros funcionan igual que en una consulta normal.
+
+No se combina con `--json`, `--format csv` ni `--output`, porque el seguimiento no termina y no
+hay un documento que cerrar; si quieres guardarlo, redirige la salida con `>`. Tampoco con
+`--until`, que le pondría una fecha final a algo que por definición no la tiene. En los tres
+casos Suize lo explica en vez de fallar a medias.
 
 Antes de la tabla se muestra un resumen de las entradas encontradas:
 
