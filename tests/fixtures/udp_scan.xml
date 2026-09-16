@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.94SVN scan initiated Wed Sep 16 13:39:10 2026 as: nmap -sU -sV -F -oX /tmp/udp_scan.xml 127.0.0.1 -->
+<nmaprun scanner="nmap" args="nmap -sU -sV -F -oX /tmp/udp_scan.xml 127.0.0.1" start="1789565950" startstr="Wed Sep 16 13:39:10 2026" version="7.94SVN" xmloutputversion="1.05">
+<scaninfo type="udp" protocol="udp" numservices="100" services="7,9,17,19,49,53,67-69,80,88,111,120,123,135-139,158,161-162,177,427,443,445,497,500,514-515,518,520,593,623,626,631,996-999,1022-1023,1025-1030,1433-1434,1645-1646,1701,1718-1719,1812-1813,1900,2000,2048-2049,2222-2223,3283,3456,3703,4444,4500,5000,5060,5353,5632,9200,10000,17185,20031,30718,31337,32768-32769,32771,32815,33281,49152-49154,49156,49181-49182,49185-49186,49188,49190-49194,49200-49201,65024"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<host starttime="1789565951" endtime="1789566063"><status state="up" reason="localhost-response" reason_ttl="0"/>
+<address addr="127.0.0.1" addrtype="ipv4"/>
+<hostnames>
+<hostname name="localhost" type="PTR"/>
+</hostnames>
+<ports><extraports state="closed" count="96">
+<extrareasons reason="port-unreach" count="96" proto="udp" ports="7,9,17,19,49,67-69,80,88,111,120,135-139,158,162,177,427,443,445,497,500,514-515,518,520,593,623,626,631,996-999,1022-1023,1025-1030,1433-1434,1645-1646,1701,1718-1719,1812-1813,1900,2000,2048-2049,2222-2223,3283,3456,3703,4444,4500,5000,5060,5632,9200,10000,17185,20031,30718,31337,32768-32769,32771,32815,33281,49152-49154,49156,49181-49182,49185-49186,49188,49190-49194,49200-49201,65024"/>
+</extraports>
+<port protocol="udp" portid="53"><state state="open" reason="udp-response" reason_ttl="64"/><service name="domain" servicefp="SF-Port53-UDP:V=7.94SVN%I=7%D=9/16%Time=6AAA9C05%P=x86_64-pc-linux-gnu%r(DNSVersionBindReq,A,&quot;\0respuesta&quot;)%r(DNSStatusRequest,A,&quot;\0respuesta&quot;)%r(RPCCheck,A,&quot;\0respuesta&quot;)%r(NBTStat,A,&quot;\0respuesta&quot;)%r(Help,A,&quot;\0respuesta&quot;)%r(SIPOptions,A,&quot;\0respuesta&quot;)%r(Sqlping,A,&quot;\0respuesta&quot;)%r(NTPRequest,A,&quot;\0respuesta&quot;)%r(SNMPv1public,A,&quot;\0respuesta&quot;)%r(SNMPv3GetRequest,A,&quot;\0respuesta&quot;)%r(xdmcp,A,&quot;\0respuesta&quot;)%r(AFSVersionRequest,A,&quot;\0respuesta&quot;)%r(DNS-SD,A,&quot;\0respuesta&quot;)%r(Citrix,A,&quot;\0respuesta&quot;)%r(Kerberos,A,&quot;\0respuesta&quot;)%r(sybaseanywhere,A,&quot;\0respuesta&quot;)%r(NetMotionMobility,A,&quot;\0respuesta&quot;)%r(DTLSSessionReq,A,&quot;\0respuesta&quot;)%r(QUIC,A,&quot;\0respuesta&quot;);" method="table" conf="3"/></port>
+<port protocol="udp" portid="123"><state state="open" reason="udp-response" reason_ttl="64"/><service name="ntp" servicefp="SF-Port123-UDP:V=7.94SVN%I=7%D=9/16%Time=6AAA9C05%P=x86_64-pc-linux-gnu%r(NTPRequest,A,&quot;\0respuesta&quot;)%r(NTP_REQ,A,&quot;\0respuesta&quot;)%r(RPCCheck,A,&quot;\0respuesta&quot;)%r(DNSVersionBindReq,A,&quot;\0respuesta&quot;)%r(DNSStatusRequest,A,&quot;\0respuesta&quot;)%r(NBTStat,A,&quot;\0respuesta&quot;)%r(Help,A,&quot;\0respuesta&quot;)%r(SIPOptions,A,&quot;\0respuesta&quot;)%r(Sqlping,A,&quot;\0respuesta&quot;)%r(SNMPv1public,A,&quot;\0respuesta&quot;)%r(SNMPv3GetRequest,A,&quot;\0respuesta&quot;)%r(xdmcp,A,&quot;\0respuesta&quot;)%r(AFSVersionRequest,A,&quot;\0respuesta&quot;)%r(DNS-SD,A,&quot;\0respuesta&quot;)%r(Citrix,A,&quot;\0respuesta&quot;)%r(Kerberos,A,&quot;\0respuesta&quot;)%r(sybaseanywhere,A,&quot;\0respuesta&quot;)%r(NetMotionMobility,A,&quot;\0respuesta&quot;)%r(DTLSSessionReq,A,&quot;\0respuesta&quot;)%r(QUIC,A,&quot;\0respuesta&quot;);" method="table" conf="3"/></port>
+<port protocol="udp" portid="161"><state state="open|filtered" reason="no-response" reason_ttl="0"/><service name="snmp" method="table" conf="3"/></port>
+<port protocol="udp" portid="5353"><state state="open|filtered" reason="no-response" reason_ttl="0"/><service name="zeroconf" method="table" conf="3"/></port>
+</ports>
+<times srtt="3" rttvar="0" to="100000"/>
+</host>
+<runstats><finished time="1789566063" timestr="Wed Sep 16 13:41:03 2026" summary="Nmap done at Wed Sep 16 13:41:03 2026; 1 IP address (1 host up) scanned in 112.31 seconds" elapsed="112.31" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>

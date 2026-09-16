@@ -22,7 +22,12 @@ from suize.ui.render_logs import build_live_line, render_logs
 from suize.ui.render_nmap import render_correlations, render_hosts
 from suize.ui.theme import APP_NAME, ICONS, TAGLINE, icon, icons_enabled, message
 from suize.utils.deps import Dependency, is_systemd_running, systemd_hint
-from suize.utils.permissions import PermissionStatus, journal_hint, nmap_hint
+from suize.utils.permissions import (
+    PermissionStatus,
+    check_permissions,
+    journal_hint,
+    nmap_hint,
+)
 from suize.utils.shell import CommandError
 from suize.utils.time_filter import TimeRange
 from suize.utils.validators import is_loopback
@@ -92,6 +97,26 @@ def render_startup_warnings(
 
 
 # --------------------------------------------------------------------------- acciones
+
+
+def root_required_hint(profile: str) -> str | None:
+    """Mensaje si el perfil necesita privilegios y no los hay; ``None`` si todo bien.
+
+    Nmap, sin root, se limita a decir "You requested a scan type which requires
+    root privileges" y aborta. Se comprueba antes para poder decir además cómo
+    resolverlo.
+    """
+    scan_profile = nmap_runner.SCAN_PROFILES.get(profile)
+    if scan_profile is None or not scan_profile.requires_root:
+        return None
+    if check_permissions().is_root:
+        return None
+    return (
+        f"El perfil '{profile}' necesita privilegios de root: Nmap no puede enviar "
+        "paquetes UDP en crudo sin ellos. Repite el escaneo con sudo, indicando la "
+        "ruta completa (p. ej. 'sudo ~/.local/bin/suize scan ... --profile udp'), "
+        "porque sudo no hereda tu PATH."
+    )
 
 
 def execute_scan(
@@ -222,6 +247,10 @@ REMOTE_CORRELATION_WARNING = (
 def _scan_step(ctx: AppContext) -> tuple[str, list[Host]]:
     target = prompts.ask_target(ctx.settings.default_target)
     profile = prompts.ask_scan_profile(nmap_runner.SCAN_PROFILES, ctx.settings.scan_profile)
+    if (hint := root_required_hint(profile)) is not None:
+        # En el menú no se puede reintentar con sudo por su cuenta: se explica y se vuelve.
+        ctx.console.print(message("error", hint))
+        raise prompts.Cancelled
     hosts = execute_scan(ctx.console, target, profile=profile, timeout=ctx.settings.scan_timeout)
     with paged(ctx.console, enabled=ctx.pager):
         render_hosts(ctx.console, hosts, target=target)

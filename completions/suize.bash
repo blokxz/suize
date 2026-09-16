@@ -26,7 +26,7 @@ _suize() {
     local scan_opts="--profile -Pn --no-ping --correlate --since --save-xml"
     local logs_opts="-u --unit -p --priority --since --until -g --grep -n --lines -f --follow"
 
-    local profiles="fast standard full"
+    local profiles="fast standard full udp"
     local formats="table json csv"
     local priorities="0 1 2 3 4 5 6 7 emerg alert crit err warning notice info debug"
     local ranges="15m 1h 6h 24h 7d today yesterday hoy ayer"

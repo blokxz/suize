@@ -85,6 +85,7 @@ _suize_scan() {
             fast\:"los 100 puertos más comunes"
             standard\:"los 1000 puertos más comunes"
             full\:"los 65535 puertos TCP"
+            udp\:"los 100 puertos UDP más comunes (requiere root)"
         ))' \
         {-Pn,--no-ping}'[omite el descubrimiento: escanea aunque no responda]' \
         '--correlate[muestra también los logs de las unidades systemd]' \

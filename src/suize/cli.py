@@ -299,11 +299,16 @@ def _cmd_scan(
     if args.correlate and not args.quiet and not is_loopback(target):
         err.print(message("warning", menus.REMOTE_CORRELATION_WARNING))
 
+    profile = args.profile or settings.scan_profile
+    if (hint := menus.root_required_hint(profile)) is not None:
+        err.print(message("error", hint))
+        return EXIT_USAGE
+
     try:
         hosts: list[Host] = menus.execute_scan(
             err,
             target,
-            profile=args.profile or settings.scan_profile,
+            profile=profile,
             timeout=settings.scan_timeout,
             save_xml=args.save_xml,
             skip_ping=args.skip_ping,
