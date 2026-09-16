@@ -8,29 +8,36 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.3.0] - 2026-09-16
+
 ### Añadido
 
 - Seguimiento del journal en vivo con `-f`/`--follow`: las entradas aparecen según se escriben,
   con los mismos filtros que una consulta normal. Se para con `Ctrl+C`, que sale con código 0.
-- Opción global `--no-emoji`, para terminales sin una fuente que incluya los iconos. Los del
-  menú desaparecen y los de los mensajes se sustituyen por marcas de texto (`[i]`, `[ok]`,
-  `[!]`, `[x]`), que siguen distinguiendo un error de un aviso.
+- Perfil de escaneo `udp` (`--profile udp`), para los servicios que no se ven en TCP: DNS,
+  DHCP, SNMP, NTP o mDNS. Requiere root, y Suize lo comprueba antes de lanzar Nmap para poder
+  explicar cómo repetirlo con sudo.
 - Opción `-Pn`/`--no-ping` en `scan`, que omite el descubrimiento de hosts y escanea los
   puertos aunque el equipo no responda (habitual con el cortafuegos de Windows). Cuando ningún
   host responde, Suize lo sugiere; en el menú interactivo ofrece repetir el escaneo sin
   descubrimiento.
+- Autocompletado de shell para zsh y bash, en `completions/`. Además de subcomandos y opciones,
+  completa los valores de `--profile`, `--format`, `-p/--priority` y `--since`, y las unidades
+  systemd reales del equipo en `-u/--unit`. No añade dependencias.
 - Las tablas de correlación (puerto y servicio → unidades systemd) pasan a la configuración,
   en `[correlation.ports]` y `[correlation.services]`. Se combinan entrada por entrada con las
   que trae Suize, así que reconocer un servicio propio ya no exige tocar el código. Una lista
   vacía desactiva una entrada.
 - Más servicios reconocidos de fábrica por la correlación: CUPS (631), Samba, Postfix, NFS,
   rpcbind, xrdp, Cockpit, FTP, MQTT y memcached.
-- Autocompletado de shell para zsh y bash, en `completions/`. Además de subcomandos y opciones,
-  completa los valores de `--profile`, `--format`, `-p/--priority` y `--since`, y las unidades
-  systemd reales del equipo en `-u/--unit`. No añade dependencias.
+- Opción global `--no-emoji`, para terminales sin una fuente que incluya los iconos. Los del
+  menú desaparecen y los de los mensajes se sustituyen por marcas de texto (`[i]`, `[ok]`,
+  `[!]`, `[x]`), que siguen distinguiendo un error de un aviso.
 
 ### Corregido
 
+- Los puertos `open|filtered` se daban por cerrados, así que no aparecían en la tabla ni en la
+  correlación. Es el estado más habitual en UDP: ahora cuentan como abiertos.
 - El panel de dependencias y el error de fecha inválida escribían su símbolo a mano en vez de
   usar la función común, así que ignoraban cualquier cambio de formato de los mensajes.
 
@@ -76,6 +83,7 @@ Primera versión.
   se puede usar y se explica por qué.
 - Validación de objetivos y unidades contra la inyección de argumentos en Nmap y journalctl.
 
-[Sin publicar]: https://github.com/TU-USUARIO/suize/compare/v0.2.0...HEAD
+[Sin publicar]: https://github.com/TU-USUARIO/suize/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/TU-USUARIO/suize/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/TU-USUARIO/suize/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/TU-USUARIO/suize/releases/tag/v0.1.0
