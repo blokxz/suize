@@ -59,6 +59,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- El README se reorganiza en torno a la correlación, que es lo que distingue a Suize: el
+  ejemplo de punta a punta pasa al principio y la referencia exhaustiva de opciones,
+  configuración y solución de problemas se traslada a `docs/`. De 941 a 427 líneas.
+- Nueva tabla de sistemas compatibles, que distingue lo comprobado de lo que debería
+  funcionar.
+
 - Las opciones globales `--config`, `--no-color` y `--no-pager` se aceptan tanto antes como
   después del subcomando: `suize logs --since 1h --no-color` ya no da error.
 

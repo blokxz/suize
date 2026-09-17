@@ -1,6 +1,6 @@
 # Suize
 
-[![CI](https://github.com/TU-USUARIO/suize/actions/workflows/ci.yml/badge.svg)](https://github.com/TU-USUARIO/suize/actions/workflows/ci.yml)
+[![CI](https://github.com/blokxz/suize/actions/workflows/ci.yml/badge.svg)](https://github.com/blokxz/suize/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)
 ![Plataforma](https://img.shields.io/badge/plataforma-Linux-lightgrey)
 [![Licencia](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
@@ -134,7 +134,7 @@ sudo apt install python3.11 python3.11-venv
 ### 2. Descargar e instalar
 
 ```bash
-git clone https://github.com/TU-USUARIO/suize.git
+git clone https://github.com/blokxz/suize.git
 cd suize
 python3 -m venv .venv
 .venv/bin/pip install -e .
@@ -170,7 +170,7 @@ Si solo vas a usar la herramienta (sin modificar el código),
 
 ```bash
 sudo apt install pipx && pipx ensurepath    # cierra la sesión y vuelve a entrar
-pipx install git+https://github.com/TU-USUARIO/suize.git
+pipx install git+https://github.com/blokxz/suize.git
 ```
 
 ### Actualizar y desinstalar
@@ -178,7 +178,7 @@ pipx install git+https://github.com/TU-USUARIO/suize.git
 | Método de instalación | Actualizar                                   | Desinstalar                              |
 |-----------------------|----------------------------------------------|------------------------------------------|
 | Entorno virtual       | `git pull` en la carpeta del proyecto        | `rm ~/.local/bin/suize` y borrar la carpeta |
-| pipx                  | `pipx install --force git+https://github.com/TU-USUARIO/suize.git` | `pipx uninstall suize` |
+| pipx                  | `pipx install --force git+https://github.com/blokxz/suize.git` | `pipx uninstall suize` |
 
 Si una actualización cambia las dependencias (`pyproject.toml`), repite
 `.venv/bin/pip install -e .` después del `git pull`.
@@ -773,7 +773,7 @@ terminal), o desactivarlos con `--no-emoji`, que sustituye los iconos por marcas
 ### Entorno
 
 ```bash
-git clone https://github.com/TU-USUARIO/suize.git
+git clone https://github.com/blokxz/suize.git
 cd suize
 python3 -m venv .venv
 source .venv/bin/activate
