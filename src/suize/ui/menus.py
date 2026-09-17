@@ -1,7 +1,8 @@
 """Menú principal, submenús interactivos y acciones compartidas con los subcomandos."""
 
+import ipaddress
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from questionary import Choice
@@ -50,10 +51,20 @@ class AppContext:
     deps: Mapping[str, Dependency]
     permissions: PermissionStatus
     pager: bool = True
+    #: Unidades systemd ya consultadas en esta sesión. Cada consulta lanza un
+    #: proceso y devuelve la lista entera, y el menú la necesita dos veces: al
+    #: autocompletar una unidad y al correlacionar. Se guarda la primera.
+    _units: set[str] | None = field(default=None, repr=False)
 
     def has(self, *names: str) -> bool:
         """``True`` si todas las dependencias indicadas están instaladas."""
         return all((dep := self.deps.get(name)) is not None and dep.available for name in names)
+
+    def system_units(self, *, timeout: float) -> set[str]:
+        """Unidades del sistema, consultando ``systemctl`` una sola vez por sesión."""
+        if self._units is None:
+            self._units = correlator.list_system_services(timeout=timeout)
+        return self._units
 
 
 # --------------------------------------------------------------------------- avisos
@@ -147,6 +158,33 @@ SKIP_PING_HINT = (
 )
 
 
+#: A partir de cuántos hosts un escaneo sin descubrimiento se vuelve costoso.
+#: Un /22 son 1024 direcciones; por debajo, la espera sigue siendo tolerable.
+LARGE_NETWORK_HOSTS = 1024
+
+
+def large_network_warning(target: str, *, skip_ping: bool) -> str | None:
+    """Aviso si se pide ``-Pn`` sobre una red grande; ``None`` si no procede.
+
+    Sin descubrimiento, Nmap no descarta ninguna dirección: prueba todos los
+    puertos de todas ellas, aunque no exista nadie. El coste se multiplica por
+    el número de direcciones del rango, así que conviene decirlo antes.
+    """
+    if not skip_ping or "/" not in target:
+        return None
+    try:
+        network = ipaddress.ip_network(target.strip(), strict=False)
+    except ValueError:
+        return None
+    if network.num_addresses < LARGE_NETWORK_HOSTS:
+        return None
+    return (
+        f"-Pn sobre {target} son {network.num_addresses} direcciones, y sin descubrimiento "
+        "Nmap prueba los puertos de todas, existan o no. Puede tardar horas: considera "
+        "acotar el rango o usar --profile fast."
+    )
+
+
 def nothing_responded(hosts: Sequence[Host]) -> bool:
     """``True`` si Nmap no devolvió hosts o todos figuran como caídos."""
     return not any(host.is_up for host in hosts)
@@ -166,9 +204,20 @@ def find_correlations(
     *,
     timeout: float,
     tables: correlator.CorrelationTables,
+    units_provider: Callable[..., set[str]] | None = None,
 ) -> list[Correlation]:
+    """Correlaciona los puertos abiertos con las unidades systemd del sistema.
+
+    ``units_provider`` permite reutilizar una consulta ya hecha (la caché del
+    menú); sin él se consulta ``systemctl`` directamente, que es lo que hace el
+    subcomando, donde no hay nada que reaprovechar.
+    """
     with status_console.status("Buscando unidades systemd…"):
-        services = correlator.list_system_services(timeout=timeout)
+        services = (
+            units_provider(timeout=timeout)
+            if units_provider is not None
+            else correlator.list_system_services(timeout=timeout)
+        )
     return correlator.correlate(hosts, services, tables)
 
 
@@ -279,6 +328,7 @@ def _correlation_step(ctx: AppContext, target: str, hosts: Sequence[Host]) -> No
         hosts,
         timeout=ctx.settings.journal_timeout,
         tables=correlation_tables(ctx.settings),
+        units_provider=ctx.system_units,
     )
     with paged(ctx.console, enabled=ctx.pager):
         render_correlations(ctx.console, correlations)
@@ -353,7 +403,7 @@ def _known_units(ctx: AppContext) -> list[str]:
     if not ctx.has("systemctl"):
         return []
     try:
-        return sorted(correlator.list_system_services(timeout=10))
+        return sorted(ctx.system_units(timeout=10))
     except CommandError:
         return []
 

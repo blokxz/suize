@@ -299,6 +299,9 @@ def _cmd_scan(
     if args.correlate and not args.quiet and not is_loopback(target):
         err.print(message("warning", menus.REMOTE_CORRELATION_WARNING))
 
+    if not args.quiet and (aviso := menus.large_network_warning(target, skip_ping=args.skip_ping)):
+        err.print(message("warning", aviso))
+
     profile = args.profile or settings.scan_profile
     if (hint := menus.root_required_hint(profile)) is not None:
         err.print(message("error", hint))

@@ -16,6 +16,7 @@ las líneas según llegan y se asegura de matar al hijo al salir.
 import shutil
 import signal
 import subprocess
+import tempfile
 from collections.abc import Collection, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -167,32 +168,54 @@ def stream(cmd: Sequence[str]) -> Iterator[str]:
     terminal llegue solo a Suize: así se decide aquí cómo y cuándo pararlo, en
     vez de que el hijo muera por su cuenta a mitad de una línea.
 
+    ``stderr`` va a un archivo temporal, no a una tubería. Con una tubería que
+    nadie lee, el hijo se bloquea en cuanto llena su búfer (unos 64 KB) y el
+    seguimiento se cuelga sin dar ningún error: un journal corrupto o una
+    rotación bastan para provocarlo. El archivo, además, permite explicar por
+    qué falló el programa si termina mal.
+
     Raises:
-        CommandError: si el programa no existe o no puede lanzarse.
+        CommandError: si el programa no existe, no puede lanzarse, o termina
+            con un código distinto de cero.
     """
     program, executable = _resolve(cmd)
-    try:
-        process = subprocess.Popen(
-            [executable, *cmd[1:]],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            bufsize=1,  # por líneas: sin esto la salida llegaría a bloques
-            start_new_session=True,
-        )
-    except OSError as exc:
-        raise CommandError(
-            f"No se pudo ejecutar '{program}': {exc.strerror or exc}", cmd=cmd
-        ) from exc
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as errors:
+        try:
+            process = subprocess.Popen(
+                [executable, *cmd[1:]],
+                stdout=subprocess.PIPE,
+                stderr=errors,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,  # por líneas: sin esto la salida llegaría a bloques
+                start_new_session=True,
+            )
+        except OSError as exc:
+            raise CommandError(
+                f"No se pudo ejecutar '{program}': {exc.strerror or exc}", cmd=cmd
+            ) from exc
 
-    with _terminating(process):
-        assert process.stdout is not None
-        for line in process.stdout:
-            text = line.rstrip("\n")
-            if text:
-                yield text
+        completed = False
+        with _terminating(process):
+            assert process.stdout is not None
+            for line in process.stdout:
+                text = line.rstrip("\n")
+                if text:
+                    yield text
+            completed = True
+
+        # Solo se comprueba el resultado si la salida se agotó por su cuenta: si
+        # quien consume cortó el bucle, el proceso murió por orden nuestra y su
+        # código de salida no dice nada útil.
+        if completed and process.returncode:
+            errors.seek(0)
+            detail = _tail(errors.read()) or "sin mensajes de error"
+            raise CommandError(
+                f"'{program}' terminó con código {process.returncode}: {detail}",
+                cmd=cmd,
+                returncode=process.returncode,
+            )
 
 
 def interrupt_signal() -> int:

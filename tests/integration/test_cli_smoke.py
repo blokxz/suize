@@ -1010,3 +1010,27 @@ def test_follow_is_off_by_default() -> None:
 
 def test_the_short_form_works() -> None:
     assert cli.build_parser().parse_args(["logs", "-f"]).follow is True
+
+
+def test_a_large_network_with_skip_ping_is_warned(
+    fake_system: FakeSystem, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, _, err = run_cli(capsys, "scan", "10.0.0.0/16", "-Pn")
+
+    assert "65536 direcciones" in err
+
+
+def test_a_small_network_with_skip_ping_is_not_warned(
+    fake_system: FakeSystem, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, _, err = run_cli(capsys, "scan", "192.168.1.0/24", "-Pn")
+
+    assert "-Pn sobre" not in err
+
+
+def test_quiet_hides_the_large_network_warning(
+    fake_system: FakeSystem, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, _, err = run_cli(capsys, "scan", "10.0.0.0/16", "-Pn", "-q")
+
+    assert "-Pn sobre" not in err
