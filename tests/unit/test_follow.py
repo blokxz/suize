@@ -108,11 +108,31 @@ def test_the_child_runs_in_its_own_session() -> None:
     assert list(stream(_python(script))) == ["True"]
 
 
-def test_a_failing_program_does_not_raise_by_itself() -> None:
-    """El seguimiento no interpreta el código de salida: solo entrega lo que llega."""
-    lines = list(stream(_python("import sys; print('algo'); sys.exit(1)")))
+def test_a_failing_program_is_reported() -> None:
+    """Si journalctl se cae, hay que decirlo: antes el fallo se tragaba en silencio."""
+    script = "import sys; print('algo'); sys.stderr.write('se rompió'); sys.exit(1)"
 
-    assert lines == ["algo"]
+    with pytest.raises(CommandError, match="se rompió"):
+        list(stream(_python(script)))
+
+
+def test_cutting_the_loop_is_not_treated_as_a_failure() -> None:
+    """Al cortar, el hijo muere por orden nuestra: su código de salida no dice nada."""
+    for _ in stream(_python("import time; print('a', flush=True); time.sleep(30)")):
+        break  # no debe lanzar CommandError
+
+
+def test_a_lot_of_stderr_does_not_block_the_child() -> None:
+    """Con stderr en una tubería sin leer, el hijo se colgaba al llenar el búfer."""
+    script = (
+        "import sys\n"
+        "print('primera', flush=True)\n"
+        "sys.stderr.write('x' * 200000)\n"
+        "sys.stderr.flush()\n"
+        "print('segunda', flush=True)\n"
+    )
+
+    assert list(stream(_python(script))) == ["primera", "segunda"]
 
 
 # ---------------------------------------------------------------------------- parse_line

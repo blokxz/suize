@@ -12,6 +12,23 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Aviso al pedir `-Pn` sobre una red de 1024 direcciones o más: sin descubrimiento, Nmap prueba
+  los puertos de todas, existan o no, y el escaneo puede tardar horas.
+
+### Corregido
+
+- El seguimiento en vivo podía colgarse indefinidamente. `stream()` abría una tubería para
+  `stderr` que nadie leía: al llenarse su búfer (unos 64 KB) el proceso hijo se bloqueaba al
+  escribir, sin error ni salida. Ahora va a un archivo temporal, que además permite explicar
+  por qué falló el programa en vez de terminar en silencio.
+
+### Cambiado
+
+- El menú consulta `systemctl list-units` una sola vez por sesión, en lugar de una al
+  autocompletar unidades y otra al correlacionar.
+
+### Añadido
+
 - Seguimiento del journal en vivo con `-f`/`--follow`: las entradas aparecen según se escriben,
   con los mismos filtros que una consulta normal. Se para con `Ctrl+C`, que sale con código 0.
 - Perfil de escaneo `udp` (`--profile udp`), para los servicios que no se ven en TCP: DNS,
